@@ -1,0 +1,14 @@
+[Unit]
+Description=Chores App
+After=network.target avahi-daemon.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/ChoresApp
+ExecStart=/usr/bin/python3 -m gunicorn --bind 0.0.0.0:8080 --chdir /home/pi/ChoresApp server.app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

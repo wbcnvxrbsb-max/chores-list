@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Chores</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</head>
+<body x-data="choresApp()" x-init="init()">
+
+    <!-- Home Screen - Child Selection -->
+    <template x-if="currentView === 'home'">
+        <div class="screen home-screen">
+            <header>
+                <h1>Chores</h1>
+                <button class="btn-icon" @click="showPinModal = true" aria-label="Parent Login">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </button>
+            </header>
+
+            <main>
+                <template x-if="children.length === 0">
+                    <div class="empty-state">
+                        <p>No children added yet.</p>
+                        <p class="hint">Tap the lock icon to set up.</p>
+                    </div>
+                </template>
+
+                <div class="children-grid">
+                    <template x-for="child in children" :key="child.id">
+                        <button class="child-card" @click="selectChild(child)">
+                            <span class="child-avatar" x-text="child.name.charAt(0).toUpperCase()"></span>
+                            <span class="child-name" x-text="child.name"></span>
+                        </button>
+                    </template>
+                </div>
+            </main>
+        </div>
+    </template>
+
+    <!-- Child Chore View -->
+    <template x-if="currentView === 'child'">
+        <div class="screen child-screen">
+            <header>
+                <button class="btn-back" @click="goHome()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Back
+                </button>
+                <h1 x-text="selectedChild?.name + '\\'s Chores'"></h1>
+                <div class="spacer"></div>
+            </header>
+
+            <main>
+                <template x-if="chores.length === 0">
+                    <div class="empty-state">
+                        <p>No chores assigned yet!</p>
+                    </div>
+                </template>
+
+                <!-- Daily Chores -->
+                <template x-if="choresByFrequency('daily').length > 0">
+                    <div class="chore-section">
+                        <h2 class="section-title">Daily</h2>
+                        <ul class="chore-list">
+                            <template x-for="chore in choresByFrequency('daily')" :key="chore.id">
+                                <li class="chore-item" :class="{ 'completed': chore.completed }">
+                                    <button class="chore-checkbox" @click="toggleChore(chore)" :aria-checked="chore.completed">
+                                        <span class="checkbox-icon">
+                                            <template x-if="chore.completed">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </template>
+                                        </span>
+                                    </button>
+                                    <span class="chore-title" x-text="chore.title"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <!-- Weekly Chores -->
+                <template x-if="choresByFrequency('weekly').length > 0">
+                    <div class="chore-section">
+                        <h2 class="section-title">Weekly</h2>
+                        <ul class="chore-list">
+                            <template x-for="chore in choresByFrequency('weekly')" :key="chore.id">
+                                <li class="chore-item" :class="{ 'completed': chore.completed }">
+                                    <button class="chore-checkbox" @click="toggleChore(chore)" :aria-checked="chore.completed">
+                                        <span class="checkbox-icon">
+                                            <template x-if="chore.completed">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </template>
+                                        </span>
+                                    </button>
+                                    <span class="chore-title" x-text="chore.title"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <!-- Monthly Chores -->
+                <template x-if="choresByFrequency('monthly').length > 0">
+                    <div class="chore-section">
+                        <h2 class="section-title">Monthly</h2>
+                        <ul class="chore-list">
+                            <template x-for="chore in choresByFrequency('monthly')" :key="chore.id">
+                                <li class="chore-item" :class="{ 'completed': chore.completed }">
+                                    <button class="chore-checkbox" @click="toggleChore(chore)" :aria-checked="chore.completed">
+                                        <span class="checkbox-icon">
+                                            <template x-if="chore.completed">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </template>
+                                        </span>
+                                    </button>
+                                    <span class="chore-title" x-text="chore.title"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <!-- One-off Chores -->
+                <template x-if="choresByFrequency('oneoff').length > 0">
+                    <div class="chore-section">
+                        <h2 class="section-title">One-off</h2>
+                        <ul class="chore-list">
+                            <template x-for="chore in choresByFrequency('oneoff')" :key="chore.id">
+                                <li class="chore-item" :class="{ 'completed': chore.completed }">
+                                    <button class="chore-checkbox" @click="toggleChore(chore)" :aria-checked="chore.completed">
+                                        <span class="checkbox-icon">
+                                            <template x-if="chore.completed">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </template>
+                                        </span>
+                                    </button>
+                                    <span class="chore-title" x-text="chore.title"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+            </main>
+        </div>
+    </template>
+
+    <!-- Parent Dashboard -->
+    <template x-if="currentView === 'parent'">
+        <div class="screen parent-screen">
+            <header>
+                <button class="btn-back" @click="goHome()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Back
+                </button>
+                <h1>Parent Dashboard</h1>
+                <button class="btn-text" @click="logout()">Logout</button>
+            </header>
+
+            <nav class="tabs">
+                <button :class="{ 'active': parentTab === 'children' }" @click="parentTab = 'children'">Children</button>
+                <button :class="{ 'active': parentTab === 'report' }" @click="parentTab = 'report'; loadReport()">Report</button>
+                <button :class="{ 'active': parentTab === 'settings' }" @click="parentTab = 'settings'">Settings</button>
+            </nav>
+
+            <main>
+                <!-- Children Tab -->
+                <template x-if="parentTab === 'children'">
+                    <div class="tab-content">
+                        <template x-if="!editingChild">
+                            <div>
+                                <ul class="manage-list">
+                                    <template x-for="child in children" :key="child.id">
+                                        <li class="manage-item">
+                                            <span class="item-name" x-text="child.name"></span>
+                                            <div class="item-actions">
+                                                <button class="btn-small" @click="editChildChores(child)">Chores</button>
+                                                <button class="btn-small" @click="renameChild(child)">Rename</button>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+
+                        <!-- Edit Child's Chores -->
+                        <template x-if="editingChild">
+                            <div>
+                                <div class="sub-header">
+                                    <button class="btn-back" @click="editingChild = null">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    </button>
+                                    <h2 x-text="editingChild.name + '\\'s Chores'"></h2>
+                                </div>
+
+                                <ul class="manage-list">
+                                    <template x-for="chore in editingChildChores" :key="chore.id">
+                                        <li class="manage-item">
+                                            <div class="item-info">
+                                                <span class="item-name" x-text="chore.title"></span>
+                                                <span class="item-frequency" x-text="formatFrequency(chore.frequency)"></span>
+                                            </div>
+                                            <div class="item-actions">
+                                                <button class="btn-small" @click="renameChore(chore)">Edit</button>
+                                                <button class="btn-small btn-danger" @click="deleteChore(chore)">Delete</button>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <button class="btn-primary" @click="addChore()">+ Add Chore</button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Report Tab -->
+                <template x-if="parentTab === 'report'">
+                    <div class="tab-content">
+                        <div class="history-filters">
+                            <select x-model="historyDays" @change="loadHistory()">
+                                <option value="7">Last 7 days</option>
+                                <option value="14">Last 14 days</option>
+                                <option value="30">Last 30 days</option>
+                            </select>
+                        </div>
+
+                        <template x-if="history.length === 0">
+                            <div class="empty-state">
+                                <p>No completed chores in this period.</p>
+                            </div>
+                        </template>
+
+                        <div class="history-list">
+                            <template x-for="day in history" :key="day.date">
+                                <div class="history-day">
+                                    <h3 class="history-date" x-text="formatDate(day.date)"></h3>
+                                    <template x-for="child in day.children" :key="child.id">
+                                        <div class="history-child">
+                                            <h4 x-text="child.name"></h4>
+                                            <ul>
+                                                <template x-for="chore in child.chores" :key="chore.chore_id">
+                                                    <li>
+                                                        <span x-text="chore.title"></span>
+                                                        <span class="history-time" x-text="formatTime(chore.completed_at)"></span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Settings Tab -->
+                <template x-if="parentTab === 'settings'">
+                    <div class="tab-content">
+                        <div class="settings-section">
+                            <h3>Change PIN</h3>
+                            <div class="form-group">
+                                <label>Current PIN</label>
+                                <input type="password" x-model="currentPin" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label>New PIN</label>
+                                <input type="password" x-model="newPin" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+                            </div>
+                            <button class="btn-primary" @click="changePin()">Update PIN</button>
+                        </div>
+                    </div>
+                </template>
+            </main>
+        </div>
+    </template>
+
+    <!-- PIN Modal -->
+    <div class="modal-overlay" x-show="showPinModal" x-cloak @click.self="showPinModal = false">
+        <div class="modal">
+            <h2 x-text="needsSetup ? 'Set Parent PIN' : 'Enter PIN'"></h2>
+
+            <div class="pin-display">
+                <template x-for="i in 4" :key="i">
+                    <span class="pin-dot" :class="{ 'filled': pinInput.length >= i }"></span>
+                </template>
+            </div>
+
+            <template x-if="pinError">
+                <p class="error-text" x-text="pinError"></p>
+            </template>
+
+            <div class="pin-pad">
+                <template x-for="n in [1,2,3,4,5,6,7,8,9]" :key="n">
+                    <button class="pin-btn" @click="enterPin(n)" x-text="n"></button>
+                </template>
+                <button class="pin-btn" @click="showPinModal = false; pinInput = ''">Cancel</button>
+                <button class="pin-btn" @click="enterPin(0)">0</button>
+                <button class="pin-btn" @click="pinInput = pinInput.slice(0, -1)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div class="modal-overlay" x-show="showPrompt" x-cloak @click.self="cancelPrompt()">
+        <div class="modal modal-prompt">
+            <h2 x-text="promptTitle"></h2>
+            <input type="text" x-model="promptValue" x-ref="promptInput" @keyup.enter="confirmPrompt()">
+            <div class="modal-actions">
+                <button class="btn-secondary" @click="cancelPrompt()">Cancel</button>
+                <button class="btn-primary" @click="confirmPrompt()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" x-show="showConfirm" x-cloak @click.self="cancelConfirm()">
+        <div class="modal modal-confirm">
+            <h2 x-text="confirmTitle"></h2>
+            <p x-text="confirmMessage"></p>
+            <div class="modal-actions">
+                <button class="btn-secondary" @click="cancelConfirm()">Cancel</button>
+                <button class="btn-danger" @click="doConfirm()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Chore Modal -->
+    <div class="modal-overlay" x-show="showAddChore" x-cloak @click.self="cancelAddChore()">
+        <div class="modal modal-add-chore">
+            <h2>Add Chore</h2>
+            <div class="form-group">
+                <label>Chore Name</label>
+                <input type="text" x-model="newChoreTitle" x-ref="choreInput" placeholder="Enter chore name">
+            </div>
+            <div class="form-group">
+                <label>Frequency</label>
+                <div class="frequency-options">
+                    <button class="freq-btn" :class="{ 'active': newChoreFrequency === 'daily' }" @click="newChoreFrequency = 'daily'">Daily</button>
+                    <button class="freq-btn" :class="{ 'active': newChoreFrequency === 'weekly' }" @click="newChoreFrequency = 'weekly'">Weekly</button>
+                    <button class="freq-btn" :class="{ 'active': newChoreFrequency === 'monthly' }" @click="newChoreFrequency = 'monthly'">Monthly</button>
+                    <button class="freq-btn" :class="{ 'active': newChoreFrequency === 'oneoff' }" @click="newChoreFrequency = 'oneoff'">One-off</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" @click="cancelAddChore()">Cancel</button>
+                <button class="btn-primary" @click="confirmAddChore()" :disabled="!newChoreTitle.trim() || !newChoreFrequency">Add</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
